@@ -1,22 +1,5 @@
 {
-  "compilerOptions": {
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": false,
-    "moduleResolution": "node",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
-    "target": "es2015",
-    "module": "commonjs",
-    "lib": ["es2020", "dom"],
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "my-plugin": ["src/index.ts"]
-    }
-  },
+  "compilerOptions": {},
   "files": [],
   "include": [],
   "references": [
@@ -26,5 +9,6 @@
     {
       "path": "./tsconfig.spec.json"
     }
-  ]
+  ],
+  "extends": "./tsconfig.base.json"
 }
