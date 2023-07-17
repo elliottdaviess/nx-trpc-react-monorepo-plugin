@@ -1,0 +1,11 @@
+{
+  "name": "plugin",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "bin": {
+    "plugin": "./bin/index.js"
+  },
+  "dependencies": {
+    "create-nx-workspace": "16.5.2"
+  }
+}
