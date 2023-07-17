@@ -12,6 +12,11 @@
         "index": 0
       }
     },
+    "isHost": {
+      "type": "boolean",
+      "description": "",
+      "default": false
+    },
     "frontendPort": {
       "type": "number",
       "description": "Port to use when serving the frontend project locally"

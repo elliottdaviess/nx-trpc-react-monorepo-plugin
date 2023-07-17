@@ -1,30 +1,3 @@
-// import {
-//   addProjectConfiguration,
-//   formatFiles,
-//   generateFiles,
-//   Tree,
-// } from '@nx/devkit';
-// import * as path from 'path';
-// import { MyGeneratorGeneratorSchema } from './schema';
-
-// export async function myGeneratorGenerator(
-//   tree: Tree,
-//   options: MyGeneratorGeneratorSchema
-// ) {
-//   const projectRoot = `libs/${options.name}`;
-//   addProjectConfiguration(tree, options.name, {
-//     root: projectRoot,
-//     projectType: 'library',
-//     sourceRoot: `${projectRoot}/src`,
-//     targets: {},
-//   });
-//   generateFiles(tree, path.join(__dirname, 'files'), projectRoot, options);
-//   await formatFiles(tree);
-// }
-
-// export default myGeneratorGenerator;
-
-
 import {
   Tree,
   names,
@@ -36,8 +9,10 @@ import { MyGeneratorGeneratorSchema } from './schema';
 import { applicationGenerator as nodeAppGenerator } from '@nx/node';
 import { libraryGenerator as jsLibGenerator } from '@nx/js';
 import {
-  applicationGenerator as reactAppGenerator } from '@nx/react';
+  applicationGenerator as reactAppGenerator, hostGenerator, remoteGenerator } from '@nx/react';
 import { Linter } from '@nrwl/linter';
+import { Schema } from '@nx/react/src/generators/remote/schema';
+
 
 const defaultPorts = {
   frontendPort: 3000,
@@ -77,15 +52,19 @@ async function createReactApplication(
   options: MyGeneratorGeneratorSchema,
   webAppName: string
 ) {
-  await reactAppGenerator(tree, {
+  const reactSchema: Schema = {
     name: webAppName,
     linter: Linter.EsLint,
     style: 'none',
     e2eTestRunner: 'none',
     unitTestRunner: 'jest',
-    bundler: 'webpack',
     devServerPort: options.frontendPort,
-  });
+    skipFormat: false,
+    routing: options.isHost
+  }
+
+  options.isHost ? await hostGenerator(tree, reactSchema) : await remoteGenerator(tree, reactSchema);
+  
   createAppTsxBoilerPlate(tree, options.name);
   adjustDefaultDevPort(tree, options);
   addFullstackServeTarget(tree, options);

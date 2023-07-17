@@ -10,6 +10,7 @@
     "create-nx-workspace": "16.5.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-router-dom": "6.11.2",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -23,6 +24,7 @@
     "@nx/plugin": "16.5.2",
     "@nx/react": "^16.5.2",
     "@nx/vite": "^16.5.2",
+    "@nx/web": "16.5.2",
     "@nx/webpack": "16.5.2",
     "@nx/workspace": "16.5.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.7",
