@@ -2,8 +2,10 @@ import {
   Tree,
   names,
   getWorkspaceLayout,
-  updateJson
+  updateJson,
+  addDependenciesToPackageJson
 } from '@nx/devkit';
+
 import { MyGeneratorGeneratorSchema } from './schema';
 
 import { applicationGenerator as nodeAppGenerator } from '@nx/node';
@@ -27,6 +29,9 @@ export async function myGeneratorGenerator(
   if(!tree.exists('apps')) {
     tree.write('apps/.gitkeep', '' );
   }
+  if(!tree.exists('libs')) {
+    tree.write('libs/.gitkeep', '' );
+  }
   const optionsWithDefaults = {
     ...defaultPorts,
     ...options,
@@ -45,6 +50,8 @@ export async function myGeneratorGenerator(
   );
   await createTrpcServerLibrary(tree, optionsWithDefaults, trpcServerName);
   await createTrpcClientLibrary(tree, optionsWithDefaults, trpcClientName);
+  createTrpcUtilFile(tree, optionsWithDefaults.name); 
+  addDependencies(tree)
 }
 
 async function createReactApplication(
@@ -70,29 +77,29 @@ async function createReactApplication(
   addFullstackServeTarget(tree, options);
 }
 
-function createAppTsxBoilerPlate(tree: Tree, name: string) {
-  const { className, fileName } = names(name);
-  const { npmScope } = getWorkspaceLayout(tree);
+// function createAppTsxBoilerPlate(tree: Tree, name: string) {
+//   const { className, fileName } = names(name);
+//   const { npmScope } = getWorkspaceLayout(tree);
 
-  const appTsxBoilerPlate = `import { create${className}TrpcClient } from '@${npmScope}/${fileName}-trpc-client';
-import { useEffect, useState } from 'react';
+//   const appTsxBoilerPlate = `import { create${className}TrpcClient } from '@${npmScope}/${fileName}-trpc-client';
+// import { useEffect, useState } from 'react';
 
-export function App() {
-  const [welcomeMessage, setWelcomeMessage] = useState('');
-  useEffect(() => {
-    create${className}TrpcClient()
-      .welcomeMessage.query()
-      .then(({ welcomeMessage }) => setWelcomeMessage(welcomeMessage));
-  }, []);
-  return (
-    <h1 className="text-2xl">{welcomeMessage}</h1>
-  );
-}
+// export function App() {
+//   const [welcomeMessage, setWelcomeMessage] = useState('');
+//   useEffect(() => {
+//     create${className}TrpcClient()
+//       .welcomeMessage.query()
+//       .then(({ welcomeMessage }) => setWelcomeMessage(welcomeMessage));
+//   }, []);
+//   return (
+//     <h1 className="text-2xl">{welcomeMessage}</h1>
+//   );
+// }
 
-export default App;
-`;
-  tree.write(`apps/${fileName}-web/src/app/app.tsx`, appTsxBoilerPlate);
-}
+// export default App;
+// `;
+//   tree.write(`apps/${fileName}-web/src/app/app.tsx`, appTsxBoilerPlate);
+// }
 
 function adjustDefaultDevPort(tree: Tree, options: MyGeneratorGeneratorSchema) {
   const { fileName } = names(options.name);
@@ -124,6 +131,7 @@ async function createNodeApplication(
     unitTestRunner: 'none',
     pascalCaseFiles: false,
     skipFormat: true,
+    e2eTestRunner: 'none',
     skipPackageJson: false,
     frontendProject: webAppName,
   });
@@ -137,8 +145,8 @@ async function createTrpcServerLibrary(
 ) {
   await jsLibGenerator(tree, {
     name: trpcServerName,
-    bundler: 'esbuild',
-    unitTestRunner: 'jest',
+    bundler: 'vite',
+    unitTestRunner: 'vitest',
   });
   createTrpcServerBoilerPlate(tree, options.name);
   tree.delete(`libs/${trpcServerName}/src/lib/${trpcServerName}.ts`);
@@ -259,5 +267,59 @@ function addFullstackServeTarget(tree: Tree, options: MyGeneratorGeneratorSchema
     };
   });
 }
+
+function createTrpcUtilFile(tree: Tree, name: string) {
+  const { className, fileName } = names(name);
+  const { npmScope } = getWorkspaceLayout(tree);
+
+  const trpcUtilBoilerPlate = `import type { ${className}TrpcRouter } from '@${npmScope}/${fileName}-trpc-server';
+  import { createTRPCReact } from '@trpc/react-query';
+
+  export const trpc = createTRPCReact<${className}TrpcRouter>();`;
+
+  tree.write(`apps/${fileName}-web/src/utils/trpc.ts`, trpcUtilBoilerPlate);
+}
+
+function createAppTsxBoilerPlate(tree: Tree, name: string) {
+  const appTsxBoilerPlate = `import { trpc } from '../utils/trpc';
+  import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+  import { httpBatchLink } from '@trpc/client';
+  import { useState } from 'react';
+
+  export function App() {
+    const [queryClient] = useState(() => new QueryClient());
+    const [trpcClient] = useState(() =>
+      trpc.createClient({
+        links: [
+          httpBatchLink({
+            url: 'http://localhost:3000/trpc',
+          }),
+        ],
+      })
+    );
+
+    return (
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <p>Content goes here</p>
+        </QueryClientProvider>
+      </trpc.Provider>
+    );
+  }
+
+  export default App;`;
+
+  tree.write(`apps/${name}-web/src/app/app.tsx`, appTsxBoilerPlate);
+}
+
+function addDependencies(tree: Tree) {
+  return addDependenciesToPackageJson(tree, { 
+    '@tanstack/react-query': '^4.29.19', '@trpc/client': '^10.34.0', '@trpc/react-query': '^10.34.0', '@trpc/server': '^10.34.0'}, 
+    {});
+}
+
+
+
+
 
 export default myGeneratorGenerator;
